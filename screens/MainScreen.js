@@ -40,7 +40,7 @@ class MainScreen {
               </svg>
             </div>
             <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">מערכת נוכחות</h1>
-            <p class="text-xl text-gray-600">בחר כיתה לרישום נוכחות</p>
+            <p class="text-xl text-gray-600">אמי"ת י' אשדוד</p>
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
