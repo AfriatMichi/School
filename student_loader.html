@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>טעינת תלמידים למערכת</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Rubik', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-12">
+                <div class="mx-auto mb-4 h-16 w-16 text-blue-600">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">טעינת תלמידים</h1>
+                <p class="text-xl text-gray-600">הוסף רשימת תלמידים לכיתה</p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-8">
+                <!-- בחירת כיתה -->
+                <div class="mb-8">
+                    <label class="block text-gray-700 text-lg font-bold mb-4">בחר כיתה:</label>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="classSelector">
+                        <!-- הכפתורים יתווספו דינמית -->
+                    </div>
+                </div>
+
+                <!-- תיבת טקסט לרשימת תלמידים -->
+                <div class="mb-8">
+                    <label class="block text-gray-700 text-lg font-bold mb-4">רשימת תלמידים:</label>
+                    <textarea 
+                        id="studentsList" 
+                        class="w-full h-64 p-4 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                        placeholder="הדבק כאן את רשימת התלמידים.&#10;כל תלמיד בשורה חדשה."
+                    ></textarea>
+                </div>
+
+                <!-- כפתורי פעולה -->
+                <div class="flex justify-between items-center">
+                    <button 
+                        onclick="window.location.href='index.html'" 
+                        class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                    >
+                        חזור למסך הראשי
+                    </button>
+                    <div class="flex gap-3">
+                        <button 
+                            onclick="deleteAllStudents()"
+                            id="deleteButton"
+                            class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                            disabled
+                        >
+                            מחק את כל התלמידים
+                        </button>
+                        <button 
+                            onclick="loadStudents()" 
+                            id="loadButton"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
+                            disabled
+                        >
+                            טען תלמידים
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- הודעות מערכת -->
+            <div id="messages" class="mt-6"></div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <!-- Application Scripts -->
+    <script src="services/DatabaseService.js"></script>
+    <script src="services/DataService.js"></script>
+
+    <script>
+        let selectedClass = null;
+        const loadButton = document.getElementById('loadButton');
+        const deleteButton = document.getElementById('deleteButton');
+        const messagesDiv = document.getElementById('messages');
+        const studentsList = document.getElementById('studentsList');
+
+        // הצגת הכיתות
+        function displayClasses() {
+            const classSelector = document.getElementById('classSelector');
+            const classes = window.dataService.getAllClasses();
+            
+            classes.forEach(classData => {
+                const button = document.createElement('button');
+                button.className = `p-4 rounded-xl font-bold text-white transition-all duration-200 bg-gradient-to-br ${classData.color} hover:shadow-lg transform hover:scale-105`;
+                button.textContent = `כיתה ${classData.name}`;
+                button.onclick = () => selectClass(classData.name);
+                classSelector.appendChild(button);
+            });
+        }
+
+        // בחירת כיתה
+        function selectClass(className) {
+            selectedClass = className;
+            
+            // הדגשת הכפתור הנבחר
+            const buttons = document.querySelectorAll('#classSelector button');
+            buttons.forEach(button => {
+                if (button.textContent === `כיתה ${className}`) {
+                    button.classList.add('ring-4', 'ring-blue-300');
+                } else {
+                    button.classList.remove('ring-4', 'ring-blue-300');
+                }
+            });
+
+            // הפעלת כפתורי פעולה
+            loadButton.disabled = false;
+            deleteButton.disabled = false;
+        }
+
+        // טעינת תלמידים
+        async function loadStudents() {
+            if (!selectedClass || !studentsList.value.trim()) {
+                showMessage('נא לבחור כיתה ולהזין רשימת תלמידים', 'error');
+                return;
+            }
+
+            try {
+                // עיבוד רשימת התלמידים
+                const students = studentsList.value
+                    .split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line)
+                    .map((name, index) => ({
+                        name,
+                        id: Date.now() + index, // יצירת ID ייחודי
+                        status: 0, // 0 = לא דווח, 1 = נוכח, 2 = איחור, 3 = חיסור
+                        lastAttendance: null, // תאריך דיווח נוכחות אחרון
+                        timestamp: null // זמן הדיווח האחרון
+                    }));
+
+                if (students.length === 0) {
+                    showMessage('לא נמצאו תלמידים ברשימה', 'error');
+                    return;
+                }
+
+                // שמירה ב-Firebase
+                await window.databaseService.saveClassData(selectedClass, {
+                    students,
+                    lastUpdated: new Date().toISOString()
+                });
+
+                showMessage(`✅ ${students.length} תלמידים נטענו בהצלחה לכיתה ${selectedClass}`, 'success');
+                studentsList.value = ''; // ניקוי התיבה
+                
+            } catch (error) {
+                console.error('שגיאה בטעינת תלמידים:', error);
+                showMessage('❌ שגיאה בטעינת התלמידים', 'error');
+            }
+        }
+
+        // הצגת הודעות
+        function showMessage(text, type = 'info') {
+            const colors = {
+                success: 'bg-green-100 border-green-500 text-green-700',
+                error: 'bg-red-100 border-red-500 text-red-700',
+                info: 'bg-blue-100 border-blue-500 text-blue-700'
+            };
+
+            messagesDiv.innerHTML = `
+                <div class="p-4 rounded-lg border ${colors[type]} text-center">
+                    ${text}
+                </div>
+            `;
+
+            // הסתרת ההודעה אחרי 5 שניות
+            setTimeout(() => {
+                messagesDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        // מחיקת כל התלמידים מהכיתה
+        async function deleteAllStudents() {
+            if (!selectedClass) {
+                showMessage('נא לבחור כיתה', 'error');
+                return;
+            }
+
+            if (!confirm(`האם אתה בטוח שברצונך למחוק את כל התלמידים מכיתה ${selectedClass}? פעולה זו אינה הפיכה.`)) {
+                return;
+            }
+
+            try {
+                // שמירת מערך ריק של תלמידים
+                await window.databaseService.saveClassData(selectedClass, {
+                    students: [],
+                    lastUpdated: new Date().toISOString()
+                });
+
+                showMessage(`✅ כל התלמידים נמחקו בהצלחה מכיתה ${selectedClass}`, 'success');
+                studentsList.value = ''; // ניקוי התיבה
+                
+            } catch (error) {
+                console.error('שגיאה במחיקת תלמידים:', error);
+                showMessage('❌ שגיאה במחיקת התלמידים', 'error');
+            }
+        }
+
+        // אתחול הדף
+        window.onload = async function() {
+            try {
+                // המתנה לטעינת Firebase
+                await new Promise((resolve, reject) => {
+                    const checkFirebase = () => {
+                        if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
+                            resolve();
+                        } else {
+                            setTimeout(checkFirebase, 100);
+                        }
+                    };
+                    checkFirebase();
+                });
+
+                displayClasses();
+            } catch (error) {
+                console.error('שגיאה באתחול:', error);
+                showMessage('❌ שגיאה בטעינת המערכת', 'error');
+            }
+        };
+    </script>
+</body>
+</html>

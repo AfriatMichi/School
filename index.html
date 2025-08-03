@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> תלמידים מערכת נוכחות</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Rubik', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div id="app">
+        <div class="min-h-screen flex items-center justify-center">
+            <div class="text-center">
+                <div class="mx-auto mb-6 h-24 w-24 text-blue-600 opacity-80">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">טוען מערכת נוכחות...</h1>
+                <p class="text-gray-600 text-lg">אנא המתן</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <!-- Application Scripts -->
+    <script src="services/DatabaseService.js"></script>
+    <script src="services/DataService.js"></script>
+    <script src="components/Header.js"></script>
+    <script src="components/ClassCard.js"></script>
+    <script src="components/StudentCard.js"></script>
+    <script src="components/Button.js"></script>
+    <script src="screens/MainScreen.js"></script>
+    <script src="screens/AttendanceScreen.js"></script>
+    <script src="screens/SummaryScreen.js"></script>
+    <script src="screens/AdminScreen.js"></script>
+    <script src="screens/ClassDetailsScreen.js"></script>
+    <script src="screens/HistoryScreen.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

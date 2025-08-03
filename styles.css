@@ -1,0 +1,123 @@
+@import 'https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap';
+
+/* Custom styles that complement Tailwind */
+body {
+    font-family: 'Rubik', sans-serif;
+    direction: rtl;
+    line-height: 1.6;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Loading Animation */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.loading {
+    animation: pulse 1.5s infinite;
+}
+
+/* Custom Button Styles */
+.btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out;
+}
+
+.btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700;
+}
+
+.btn-secondary {
+    @apply bg-gray-600 text-white hover:bg-gray-700;
+}
+
+.btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700;
+}
+
+.btn-success {
+    @apply bg-green-600 text-white hover:bg-green-700;
+}
+
+/* Status Badges */
+.badge {
+    @apply px-3 py-1 rounded-full text-sm font-medium;
+}
+
+.badge-present {
+    @apply bg-green-100 text-green-800;
+}
+
+.badge-late {
+    @apply bg-orange-100 text-orange-800;
+}
+
+.badge-absent {
+    @apply bg-red-100 text-red-800;
+}
+
+.badge-unmarked {
+    @apply bg-gray-100 text-gray-800;
+}
+
+/* Progress Bar */
+.progress-bar {
+    @apply w-full bg-gray-200 rounded-full h-4;
+}
+
+.progress-bar-fill {
+    @apply bg-blue-600 h-4 rounded-full transition-all duration-500;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+    @apply fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center;
+}
+
+.modal {
+    @apply bg-white rounded-xl shadow-2xl max-w-md w-full p-6;
+}
+
+/* Hover Effects */
+.hover-lift {
+    transition: transform 0.3s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-5px);
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+} 
