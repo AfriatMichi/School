@@ -5,26 +5,41 @@ class MainScreen {
   }
 
   render() {
-    const classes = window.dataService.getAllClasses();
-    const classCards = classes.map(classData => {
-      const studentCount = window.dataService.getClassData(classData.name).length;
-      return `
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer" onclick="window.app.selectClass('${classData.name}')">
-          <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6">
-            <div class="flex items-center justify-between">
-              <h3 class="text-2xl font-bold">כיתה ${classData.name}</h3>
-              <span class="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
-                ${studentCount} תלמידים
-              </span>
+    const grades = window.dataService.getAllGrades();
+    
+    // יצירת כרטיסי כיתות לפי שכבות
+    const gradeSections = grades.map(grade => {
+      if (grade.classes.length === 0) return '';
+      
+      const classCards = grade.classes.map(classData => {
+        const studentCount = window.dataService.getClassData(classData.name).length;
+        return `
+          <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer" onclick="window.app.selectClass('${classData.name}')">
+            <div class="bg-gradient-to-r ${classData.color} text-white p-6">
+              <div class="flex items-center justify-between">
+                <h3 class="text-2xl font-bold">כיתה ${classData.name}</h3>
+                <span class="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
+                  ${studentCount} תלמידים
+                </span>
+              </div>
+            </div>
+            <div class="p-6 text-center">
+              <div class="text-gray-600 mb-4 text-lg">לחץ להתחלת נוכחות</div>
+              <div class="flex justify-center">
+                <svg class="w-16 h-16 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                </svg>
+              </div>
             </div>
           </div>
-          <div class="p-6 text-center">
-            <div class="text-gray-600 mb-4 text-lg">לחץ להתחלת נוכחות</div>
-            <div class="flex justify-center">
-              <svg class="w-16 h-16 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-              </svg>
-            </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="mb-12">
+          <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center">שכבה ${grade.name}</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            ${classCards}
           </div>
         </div>
       `;
@@ -43,11 +58,17 @@ class MainScreen {
             <p class="text-xl text-gray-600">אמי"ת י' אשדוד</p>
           </div>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-            ${classCards}
-          </div>
+          ${gradeSections}
           
           <div class="text-center">
+            <div class="flex gap-4 justify-center mb-6">
+              <button
+                onclick="window.location.href='student_loader.html'"
+                class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
+              >
+                📥 טען תלמידים חדשים
+              </button>
+            </div>
             <button
               onclick="window.app.showAdminView()"
               class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-12 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
