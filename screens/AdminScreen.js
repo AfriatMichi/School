@@ -11,12 +11,11 @@ class AdminScreen {
 
   async loadClassesData() {
     try {
-      // טעינת כל הכיתות מה-DB
-      const classes = await window.databaseService.getAllClasses();
+      // טעינת כל הכיתות עם התלמידים שלהן מה-DB
+      const allClasses = await window.databaseService.getAllClassesWithStudents();
       this.classesData = [];
       
-      for (const className of classes) {
-        const classData = await window.databaseService.getClassData(className);
+      for (const [className, classData] of Object.entries(allClasses)) {
         if (classData && classData.students) {
           // חישוב סטטיסטיקות לכל כיתה
           const totalStudents = classData.students.length;
@@ -27,6 +26,8 @@ class AdminScreen {
           
           this.classesData.push({
             name: className,
+            grade: classData.grade || this.extractGradeFromClassName(className),
+            parallel: classData.parallel || this.extractParallelFromClassName(className),
             totalStudents,
             presentCount,
             lateCount,
@@ -37,9 +38,28 @@ class AdminScreen {
           });
         }
       }
+      
+      // סידור לפי שכבה ומקבילה
+      this.classesData.sort((a, b) => {
+        if (a.grade !== b.grade) {
+          return a.grade.localeCompare(b.grade);
+        }
+        return parseInt(a.parallel) - parseInt(b.parallel);
+      });
     } catch (error) {
       console.error('שגיאה בטעינת נתוני כיתות:', error);
     }
+  }
+
+  // חילוץ שם השכבה משם הכיתה
+  extractGradeFromClassName(className) {
+    return className.replace(/\d+/g, '');
+  }
+
+  // חילוץ מספר המקבילה משם הכיתה
+  extractParallelFromClassName(className) {
+    const match = className.match(/\d+/);
+    return match ? match[0] : '';
   }
 
   render() {
@@ -56,12 +76,20 @@ class AdminScreen {
                 ← חזור
               </button>
               <h1 class="text-3xl font-bold text-gray-900">דף ניהול</h1>
-              <button
-                onclick="window.app.currentScreen.refreshData()"
-                class="text-blue-600 hover:text-blue-800 transition-colors"
-              >
-                🔄 רענן
-              </button>
+              <div class="flex gap-3">
+                <button
+                  onclick="window.location.href='student_loader.html'"
+                  class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors text-sm"
+                >
+                  📥 טען תלמידים
+                </button>
+                <button
+                  onclick="window.app.currentScreen.refreshData()"
+                  class="text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  🔄 רענן
+                </button>
+              </div>
             </div>
           </div>
 
@@ -72,6 +100,7 @@ class AdminScreen {
                 <!-- Class Header -->
                 <div class="bg-red-600 text-white p-4">
                   <h2 class="text-xl font-bold">כיתה ${classData.name}</h2>
+                  <p class="text-sm opacity-90">שכבה ${classData.grade} - מקבילה ${classData.parallel}</p>
                   <p class="text-sm opacity-90">${classData.totalStudents} תלמידים</p>
                 </div>
                 
@@ -118,6 +147,14 @@ class AdminScreen {
 
                 <!-- Action Button -->
                 <div class="p-4">
+                  <div class="flex gap-2 mb-2">
+                    <button
+                      onclick="window.app.exportToCSV('${classData.name}')"
+                      class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg font-medium transition-colors text-sm"
+                    >
+                      📊 ייצא CSV
+                    </button>
+                  </div>
                   <button
                     onclick="window.app.currentScreen.viewClassDetails('${classData.name}')"
                     class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
@@ -139,7 +176,16 @@ class AdminScreen {
                 נסה שוב
               </button>
             </div>
-          ` : ''}
+          ` : `
+            <div class="text-center py-8">
+              <button
+                onclick="window.app.exportAllData()"
+                class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
+              >
+                📊 ייצא את כל הנתונים ל-CSV
+              </button>
+            </div>
+          `}
         </div>
       </div>
     `;

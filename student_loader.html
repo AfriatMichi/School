@@ -33,21 +33,80 @@
             </div>
 
             <div class="bg-white rounded-xl shadow-lg p-8">
-                <!-- בחירת כיתה -->
+                <!-- בחירת שכבה ומקבילה -->
                 <div class="mb-8">
-                    <label class="block text-gray-700 text-lg font-bold mb-4">בחר כיתה:</label>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="classSelector">
-                        <!-- הכפתורים יתווספו דינמית -->
+                    <label class="block text-gray-700 text-lg font-bold mb-4">בחר שכבה ומקבילה:</label>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-gray-600 text-sm font-medium mb-2">שכבה:</label>
+                            <select id="gradeSelector" class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none">
+                                <option value="">בחר שכבה</option>
+                                <option value="ז">ז</option>
+                                <option value="ח">ח</option>
+                                <option value="ט">ט</option>
+                                <option value="י">י</option>
+                                <option value="יא">יא</option>
+                                <option value="יב">יב</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-600 text-sm font-medium mb-2">מקבילה:</label>
+                            <input 
+                                type="number" 
+                                id="parallelInput" 
+                                min="1" 
+                                max="10"
+                                class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                                placeholder="מספר מקבילה"
+                            >
+                        </div>
+                    </div>
+                    <div id="classDisplay" class="hidden">
+                        <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                            <p class="text-blue-800 font-medium">כיתה נבחרת: <span id="selectedClassName" class="font-bold"></span></p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- תיבת טקסט לרשימת תלמידים -->
+                <!-- העלאת קובץ אקסל -->
                 <div class="mb-8">
-                    <label class="block text-gray-700 text-lg font-bold mb-4">רשימת תלמידים:</label>
+                    <label class="block text-gray-700 text-lg font-bold mb-4">העלאת קובץ אקסל:</label>
+                    <div 
+                        id="fileDropZone"
+                        class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center transition-colors hover:border-blue-400"
+                        ondrop="handleFileDrop(event)"
+                        ondragover="handleDragOver(event)"
+                        ondragleave="handleDragLeave(event)"
+                    >
+                        <div class="mx-auto mb-4 h-12 w-12 text-gray-400">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                        </div>
+                        <p class="text-gray-600 mb-2">גרור קובץ אקסל לכאן או לחץ לבחירה</p>
+                        <p class="text-sm text-gray-500 mb-4">פורמט נדרש: מס', שם התלמיד, מין, שכבה, מקבילה</p>
+                        <input 
+                            type="file" 
+                            id="excelFileInput" 
+                            accept=".xlsx,.xls,.csv"
+                            class="hidden"
+                        >
+                        <button 
+                            onclick="document.getElementById('excelFileInput').click()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                        >
+                            בחר קובץ
+                        </button>
+                    </div>
+                </div>
+
+                <!-- תיבת טקסט לרשימת תלמידים (לגיבוי) -->
+                <div class="mb-8">
+                    <label class="block text-gray-700 text-lg font-bold mb-4">רשימת תלמידים (לגיבוי):</label>
                     <textarea 
                         id="studentsList" 
-                        class="w-full h-64 p-4 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
-                        placeholder="הדבק כאן את רשימת התלמידים.&#10;כל תלמיד בשורה חדשה."
+                        class="w-full h-32 p-4 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:outline-none"
+                        placeholder="הדבק כאן את רשימת התלמידים כגיבוי.&#10;כל תלמיד בשורה חדשה."
                     ></textarea>
                 </div>
 
@@ -60,6 +119,12 @@
                         חזור למסך הראשי
                     </button>
                     <div class="flex gap-3">
+                        <button 
+                            onclick="testDatabaseConnection()"
+                            class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-3 rounded-lg font-medium transition-colors"
+                        >
+                            🔌 בדוק חיבור
+                        </button>
                         <button 
                             onclick="deleteAllStudents()"
                             id="deleteButton"
@@ -89,6 +154,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
+    <!-- SheetJS for Excel file reading -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
     <!-- Application Scripts -->
     <script src="services/DatabaseService.js"></script>
     <script src="services/DataService.js"></script>
@@ -99,38 +167,172 @@
         const deleteButton = document.getElementById('deleteButton');
         const messagesDiv = document.getElementById('messages');
         const studentsList = document.getElementById('studentsList');
+        const gradeSelector = document.getElementById('gradeSelector');
+        const parallelInput = document.getElementById('parallelInput');
+        const excelFileInput = document.getElementById('excelFileInput');
+        const classDisplay = document.getElementById('classDisplay');
+        const selectedClassName = document.getElementById('selectedClassName');
 
-        // הצגת הכיתות
-        function displayClasses() {
-            const classSelector = document.getElementById('classSelector');
-            const classes = window.dataService.getAllClasses();
+        // אתחול
+        document.addEventListener('DOMContentLoaded', function() {
+            // הוספת מאזינים לשינויים
+            gradeSelector.addEventListener('change', updateClassDisplay);
+            parallelInput.addEventListener('input', updateClassDisplay);
             
-            classes.forEach(classData => {
-                const button = document.createElement('button');
-                button.className = `p-4 rounded-xl font-bold text-white transition-all duration-200 bg-gradient-to-br ${classData.color} hover:shadow-lg transform hover:scale-105`;
-                button.textContent = `כיתה ${classData.name}`;
-                button.onclick = () => selectClass(classData.name);
-                classSelector.appendChild(button);
+            // הוספת מאזין לקובץ אקסל
+            excelFileInput.addEventListener('change', handleExcelFile);
+        });
+
+        // פונקציות לטיפול בגרירת קבצים
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('border-blue-500', 'bg-blue-50');
+        }
+
+        function handleDragLeave(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
+        }
+
+        function handleFileDrop(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type.includes('excel') || file.type.includes('spreadsheet') || file.name.endsWith('.csv')) {
+                    excelFileInput.files = files;
+                    handleExcelFile({ target: { files: files } });
+                } else {
+                    showMessage('נא להעלות קובץ אקסל או CSV בלבד', 'error');
+                }
+            }
+        }
+
+        // עדכון הצגת הכיתה הנבחרת
+        function updateClassDisplay() {
+            const grade = gradeSelector.value;
+            const parallel = parallelInput.value;
+            
+            if (grade && parallel) {
+                selectedClass = `${grade}${parallel}`;
+                selectedClassName.textContent = selectedClass;
+                classDisplay.classList.remove('hidden');
+                
+                // הפעלת כפתורי פעולה
+                loadButton.disabled = false;
+                deleteButton.disabled = false;
+            } else {
+                selectedClass = null;
+                classDisplay.classList.add('hidden');
+                loadButton.disabled = true;
+                deleteButton.disabled = true;
+            }
+        }
+
+        // טיפול בקובץ אקסל
+        async function handleExcelFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            try {
+                showMessage('מעבד קובץ אקסל...', 'info');
+                
+                // קריאת הקובץ
+                const data = await readExcelFile(file);
+                
+                // עיבוד הנתונים
+                const students = processExcelData(data);
+                
+                if (students.length === 0) {
+                    showMessage('לא נמצאו תלמידים בקובץ', 'error');
+                    return;
+                }
+
+                // הצגת הנתונים בתיבת הטקסט
+                studentsList.value = students.map(s => `${s.id}\t${s.name}\t${s.gender}\t${s.grade}\t${s.parallel}`).join('\n');
+                
+                showMessage(`✅ ${students.length} תלמידים נטענו מהקובץ`, 'success');
+                
+                // עדכון הממשק
+                if (students.length > 0) {
+                    // ניסיון לזהות שכבה ומקבילה מהנתונים
+                    const firstStudent = students[0];
+                    if (firstStudent.grade && firstStudent.parallel) {
+                        gradeSelector.value = firstStudent.grade;
+                        parallelInput.value = firstStudent.parallel;
+                        updateClassDisplay();
+                    }
+                }
+                
+            } catch (error) {
+                console.error('שגיאה בעיבוד קובץ אקסל:', error);
+                showMessage('❌ שגיאה בעיבוד הקובץ', 'error');
+            }
+        }
+
+        // קריאת קובץ אקסל
+        async function readExcelFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        const data = e.target.result;
+                        const workbook = XLSX.read(data, { type: 'binary' });
+                        const sheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[sheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                        
+                        resolve(jsonData);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                reader.onerror = reject;
+                reader.readAsBinaryString(file);
             });
         }
 
-        // בחירת כיתה
-        function selectClass(className) {
-            selectedClass = className;
+        // עיבוד נתוני האקסל
+        function processExcelData(data) {
+            if (!data || data.length < 2) return [];
             
-            // הדגשת הכפתור הנבחר
-            const buttons = document.querySelectorAll('#classSelector button');
-            buttons.forEach(button => {
-                if (button.textContent === `כיתה ${className}`) {
-                    button.classList.add('ring-4', 'ring-blue-300');
-                } else {
-                    button.classList.remove('ring-4', 'ring-blue-300');
+            const students = [];
+            const headers = data[0];
+            
+            // חיפוש אינדקסי העמודות
+            const idIndex = headers.findIndex(h => h === 'מס\'');
+            const nameIndex = headers.findIndex(h => h === 'שם התלמיד');
+            const genderIndex = headers.findIndex(h => h === 'מין');
+            const gradeIndex = headers.findIndex(h => h === 'שכבה');
+            const parallelIndex = headers.findIndex(h => h === 'מקבילה');
+            
+            if (idIndex === -1 || nameIndex === -1) {
+                throw new Error('פורמט קובץ לא תקין - חסרות עמודות נדרשות');
+            }
+            
+            // עיבוד השורות
+            for (let i = 1; i < data.length; i++) {
+                const row = data[i];
+                if (row.length < 2) continue;
+                
+                const student = {
+                    id: row[idIndex] || Date.now() + i,
+                    name: row[nameIndex] || '',
+                    gender: genderIndex !== -1 ? row[genderIndex] : '',
+                    grade: gradeIndex !== -1 ? row[gradeIndex] : '',
+                    parallel: parallelIndex !== -1 ? row[parallelIndex] : ''
+                };
+                
+                if (student.name.trim()) {
+                    students.push(student);
                 }
-            });
-
-            // הפעלת כפתורי פעולה
-            loadButton.disabled = false;
-            deleteButton.disabled = false;
+            }
+            
+            return students;
         }
 
         // טעינת תלמידים
@@ -146,31 +348,121 @@
                     .split('\n')
                     .map(line => line.trim())
                     .filter(line => line)
-                    .map((name, index) => ({
-                        name,
-                        id: Date.now() + index, // יצירת ID ייחודי
-                        status: 0, // 0 = לא דווח, 1 = נוכח, 2 = איחור, 3 = חיסור
-                        lastAttendance: null, // תאריך דיווח נוכחות אחרון
-                        timestamp: null // זמן הדיווח האחרון
-                    }));
+                    .map((line, index) => {
+                        const parts = line.split('\t');
+                        if (parts.length >= 2) {
+                            return {
+                                id: parts[0] || Date.now() + index,
+                                name: parts[1] || '',
+                                gender: parts[2] || '',
+                                grade: parts[3] || '',
+                                parallel: parts[4] || '',
+                                status: 0,
+                                lastAttendance: null,
+                                timestamp: null
+                            };
+                        } else {
+                            // fallback לפורמט הישן
+                            return {
+                                name: line,
+                                id: Date.now() + index,
+                                status: 0,
+                                lastAttendance: null,
+                                timestamp: null
+                            };
+                        }
+                    });
 
                 if (students.length === 0) {
                     showMessage('לא נמצאו תלמידים ברשימה', 'error');
                     return;
                 }
 
-                // שמירה ב-Firebase
-                await window.databaseService.saveClassData(selectedClass, {
+                // חילוץ שכבה ומקבילה משם הכיתה
+                const grade = selectedClass.replace(/\d+/g, '');
+                const parallel = selectedClass.replace(/\D/g, '');
+
+                // שמירה ב-Firebase עם המבנה החדש
+                await window.databaseService.saveClassDataWithGradeAndParallel(selectedClass, {
                     students,
                     lastUpdated: new Date().toISOString()
-                });
+                }, grade, parallel);
 
                 showMessage(`✅ ${students.length} תלמידים נטענו בהצלחה לכיתה ${selectedClass}`, 'success');
                 studentsList.value = ''; // ניקוי התיבה
                 
+                // עדכון הממשק
+                setTimeout(() => {
+                    if (confirm('האם ברצונך לטעון תלמידים לכיתה נוספת?')) {
+                        // איפוס הבחירה
+                        gradeSelector.value = '';
+                        parallelInput.value = '';
+                        updateClassDisplay();
+                    } else {
+                        // מעבר למסך הראשי
+                        window.location.href = 'index.html';
+                    }
+                }, 2000);
+                
             } catch (error) {
                 console.error('שגיאה בטעינת תלמידים:', error);
                 showMessage('❌ שגיאה בטעינת התלמידים', 'error');
+            }
+        }
+
+        // מחיקת כל התלמידים
+        async function deleteAllStudents() {
+            if (!selectedClass) {
+                showMessage('נא לבחור כיתה תחילה', 'error');
+                return;
+            }
+
+            if (!confirm(`האם אתה בטוח שברצונך למחוק את כל התלמידים מכיתה ${selectedClass}?`)) {
+                return;
+            }
+
+            try {
+                await window.databaseService.deleteAllStudentsFromClass(selectedClass);
+                showMessage(`✅ כל התלמידים נמחקו בהצלחה מכיתה ${selectedClass}`, 'success');
+                
+                // ניקוי הממשק
+                studentsList.value = '';
+                selectedClass = null;
+                classDisplay.classList.add('hidden');
+                loadButton.disabled = true;
+                deleteButton.disabled = true;
+                
+                // עדכון הממשק
+                setTimeout(() => {
+                    if (confirm('האם ברצונך למחוק תלמידים מכיתה נוספת?')) {
+                        // איפוס הבחירה
+                        gradeSelector.value = '';
+                        parallelInput.value = '';
+                        updateClassDisplay();
+                    } else {
+                        // מעבר למסך הראשי
+                        window.location.href = 'index.html';
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                console.error('שגיאה במחיקת תלמידים:', error);
+                showMessage('❌ שגיאה במחיקת התלמידים', 'error');
+            }
+        }
+
+        // בדיקת חיבור למסד נתונים
+        async function testDatabaseConnection() {
+            try {
+                showMessage('בודק חיבור למסד נתונים...', 'info');
+                const status = await window.databaseService.testConnection();
+                if (status) {
+                    showMessage('✅ חיבור למסד נתונים תקין', 'success');
+                } else {
+                    showMessage('❌ בעיה בחיבור למסד נתונים', 'error');
+                }
+            } catch (error) {
+                showMessage('❌ שגיאה בבדיקת החיבור: ' + error.message, 'error');
             }
         }
 
@@ -194,33 +486,6 @@
             }, 5000);
         }
 
-        // מחיקת כל התלמידים מהכיתה
-        async function deleteAllStudents() {
-            if (!selectedClass) {
-                showMessage('נא לבחור כיתה', 'error');
-                return;
-            }
-
-            if (!confirm(`האם אתה בטוח שברצונך למחוק את כל התלמידים מכיתה ${selectedClass}? פעולה זו אינה הפיכה.`)) {
-                return;
-            }
-
-            try {
-                // שמירת מערך ריק של תלמידים
-                await window.databaseService.saveClassData(selectedClass, {
-                    students: [],
-                    lastUpdated: new Date().toISOString()
-                });
-
-                showMessage(`✅ כל התלמידים נמחקו בהצלחה מכיתה ${selectedClass}`, 'success');
-                studentsList.value = ''; // ניקוי התיבה
-                
-            } catch (error) {
-                console.error('שגיאה במחיקת תלמידים:', error);
-                showMessage('❌ שגיאה במחיקת התלמידים', 'error');
-            }
-        }
-
         // אתחול הדף
         window.onload = async function() {
             try {
@@ -236,7 +501,7 @@
                     checkFirebase();
                 });
 
-                displayClasses();
+                // displayClasses(); // This function is no longer needed as updateClassDisplay handles class selection
             } catch (error) {
                 console.error('שגיאה באתחול:', error);
                 showMessage('❌ שגיאה בטעינת המערכת', 'error');

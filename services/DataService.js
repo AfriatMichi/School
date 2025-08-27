@@ -2,13 +2,50 @@ class DataService {
   constructor() {
     this.classesData = {};
 
-    this.classes = [
-      { name: 'ז', color: 'from-red-400 to-red-600', border: 'border-red-300', hover: 'hover:border-red-500' },
-      { name: 'ח', color: 'from-orange-400 to-orange-600', border: 'border-orange-300', hover: 'hover:border-orange-500' },
-      { name: 'ט', color: 'from-yellow-400 to-yellow-600', border: 'border-yellow-300', hover: 'hover:border-yellow-500' },
-      { name: 'י', color: 'from-green-400 to-green-600', border: 'border-green-300', hover: 'hover:border-green-500' },
-      { name: 'יא', color: 'from-blue-400 to-blue-600', border: 'border-blue-300', hover: 'hover:border-blue-500' },
-      { name: 'יב', color: 'from-purple-400 to-purple-600', border: 'border-purple-300', hover: 'hover:border-purple-500' }
+    // עדכון המבנה לתמיכה בריבוי כיתות בכל שכבה
+    this.grades = [
+      { 
+        name: 'ז', 
+        color: 'from-red-400 to-red-600', 
+        border: 'border-red-300', 
+        hover: 'hover:border-red-500',
+        classes: [] // ימלא דינמית לפי הנתונים מהקובץ
+      },
+      { 
+        name: 'ח', 
+        color: 'from-orange-400 to-orange-600', 
+        border: 'border-orange-300', 
+        hover: 'hover:border-orange-500',
+        classes: []
+      },
+      { 
+        name: 'ט', 
+        color: 'from-yellow-400 to-yellow-600', 
+        border: 'border-yellow-300', 
+        hover: 'hover:border-yellow-500',
+        classes: []
+      },
+      { 
+        name: 'י', 
+        color: 'from-green-400 to-green-600', 
+        border: 'border-green-300', 
+        hover: 'hover:border-green-500',
+        classes: []
+      },
+      { 
+        name: 'יא', 
+        color: 'from-blue-400 to-blue-600', 
+        border: 'border-blue-300', 
+        hover: 'hover:border-blue-500',
+        classes: []
+      },
+      { 
+        name: 'יב', 
+        color: 'from-purple-400 to-purple-600', 
+        border: 'border-purple-300', 
+        hover: 'hover:border-purple-500',
+        classes: []
+      }
     ];
 
     this.currentAttendance = {};
@@ -22,19 +59,49 @@ class DataService {
 
     try {
       // טעינת נתוני התלמידים מכל הכיתות
-      for (const classData of this.classes) {
-        const className = classData.name;
-        const data = await window.databaseService.getClassData(className);
-        if (data && data.students) {
-          this.classesData[className] = data.students;
-        }
-      }
+      const allClasses = await window.databaseService.getAllClassesWithStudents();
+      
+      // עדכון מבנה הנתונים לפי המידע מהדאטהבייס
+      this.updateGradesStructure(allClasses);
       
       this.isInitialized = true;
       console.log('✅ נתוני התלמידים נטענו בהצלחה');
     } catch (error) {
       console.error('❌ שגיאה בטעינת נתוני התלמידים:', error);
     }
+  }
+
+  // עדכון מבנה השכבות לפי הנתונים מהדאטהבייס
+  updateGradesStructure(allClasses) {
+    // איפוס הכיתות בכל שכבה
+    this.grades.forEach(grade => {
+      grade.classes = [];
+    });
+
+    // מילוי הכיתות לפי הנתונים מהדאטהבייס
+    Object.keys(allClasses).forEach(className => {
+      const gradeName = this.extractGradeFromClassName(className);
+      const grade = this.grades.find(g => g.name === gradeName);
+      
+      if (grade) {
+        grade.classes.push({
+          name: className,
+          color: grade.color,
+          border: grade.border,
+          hover: grade.hover,
+          studentCount: allClasses[className]?.students?.length || 0
+        });
+        
+        // שמירת נתוני התלמידים
+        this.classesData[className] = allClasses[className]?.students || [];
+      }
+    });
+  }
+
+  // חילוץ שם השכבה משם הכיתה (למשל: מ"ז1" נחלץ "ז")
+  extractGradeFromClassName(className) {
+    // הסרת מספרים מהשם כדי לקבל את שם השכבה
+    return className.replace(/\d+/g, '');
   }
 
   // קבלת התאריך הנוכחי בפורמט YYYY-MM-DD
@@ -48,9 +115,25 @@ class DataService {
     return this.classesData[className] || [];
   }
 
-  // קבלת רשימת כל הכיתות
+  // קבלת רשימת כל השכבות עם הכיתות שלהן
+  getAllGrades() {
+    return this.grades;
+  }
+
+  // קבלת רשימת כל הכיתות (לשמירה על תאימות)
   getAllClasses() {
-    return this.classes;
+    const allClasses = [];
+    this.grades.forEach(grade => {
+      grade.classes.forEach(classInfo => {
+        allClasses.push(classInfo);
+      });
+    });
+    return allClasses;
+  }
+
+  // קבלת רשימת שמות הכיתות בלבד
+  getAllClassNames() {
+    return Object.keys(this.classesData);
   }
 
   // שמירת נוכחות כיתה
@@ -68,7 +151,8 @@ class DataService {
         };
       }
 
-      const attendanceId = await window.databaseService.saveAttendance(
+      // שמירה במבנה החדש - כל הספירה ב-document אחד
+      const attendanceId = await window.databaseService.saveNewAttendanceCount(
         className, 
         this.currentDate, 
         formattedData
@@ -107,15 +191,19 @@ class DataService {
   // טעינת נוכחות כיתה
   async loadClassAttendance(className) {
     try {
-      // ניסיון לטעון מ-Firebase
-      const firebaseData = await window.databaseService.getAttendanceByClassAndDate(
+      // ניסיון לטעון מ-Firebase - המבנה החדש
+      const firebaseData = await window.databaseService.getAttendanceCountsByClassAndDate(
         className, 
         this.currentDate
       );
       
-      if (firebaseData && firebaseData.data) {
-        this.currentAttendance[className] = firebaseData.data;
-        return firebaseData.data;
+      // אם יש נתונים, נטען את הספירה האחרונה
+      if (firebaseData && firebaseData.length > 0) {
+        const latestCount = firebaseData[0]; // הספירה האחרונה
+        if (latestCount.attendanceData) {
+          this.currentAttendance[className] = latestCount.attendanceData;
+          return latestCount.attendanceData;
+        }
       }
 
       // אם אין נתונים ב-Firebase, ננסה localStorage
@@ -451,6 +539,97 @@ class DataService {
     const date = new Date(dateString);
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     return date.toLocaleDateString('he-IL', options);
+  }
+
+  // ייצוא נתוני כיתה ל-CSV
+  exportToCSV(className) {
+    try {
+      const students = this.getClassData(className);
+      if (students.length === 0) {
+        throw new Error('אין תלמידים בכיתה זו');
+      }
+
+      // כותרות
+      const headers = ['מס\'', 'שם התלמיד', 'מין', 'שכבה', 'מקבילה', 'סטטוס', 'תאריך נוכחות אחרון'];
+      const csvRows = [headers.join(',')];
+
+      // נתונים
+      students.forEach((student, index) => {
+        const row = [
+          student.id || index + 1,
+          student.name || '',
+          student.gender || '',
+          student.grade || '',
+          student.parallel || '',
+          this.getStatusText(student.status),
+          student.lastAttendance || ''
+        ];
+        csvRows.push(row.join(','));
+      });
+
+      return csvRows.join('\n');
+    } catch (error) {
+      console.error('שגיאה בייצוא CSV:', error);
+      throw error;
+    }
+  }
+
+  // ייצוא כל הנתונים ל-CSV
+  async exportAllData() {
+    try {
+      const allClasses = this.getAllClassNames();
+      let allData = [];
+
+      for (const className of allClasses) {
+        const students = this.getClassData(className);
+        students.forEach(student => {
+          allData.push({
+            className,
+            id: student.id,
+            name: student.name,
+            gender: student.gender,
+            grade: student.grade,
+            parallel: student.parallel,
+            status: this.getStatusText(student.status),
+            lastAttendance: student.lastAttendance
+          });
+        });
+      }
+
+      // כותרות
+      const headers = ['כיתה', 'מס\'', 'שם התלמיד', 'מין', 'שכבה', 'מקבילה', 'סטטוס', 'תאריך נוכחות אחרון'];
+      const csvRows = [headers.join(',')];
+
+      // נתונים
+      allData.forEach(row => {
+        const csvRow = [
+          row.className,
+          row.id,
+          row.name,
+          row.gender,
+          row.grade,
+          row.parallel,
+          row.status,
+          row.lastAttendance
+        ];
+        csvRows.push(csvRow.join(','));
+      });
+
+      return csvRows.join('\n');
+    } catch (error) {
+      console.error('שגיאה בייצוא כל הנתונים:', error);
+      throw error;
+    }
+  }
+
+  // המרת סטטוס מספרי לטקסט
+  getStatusText(status) {
+    switch (status) {
+      case 1: return 'נוכח';
+      case 2: return 'איחור';
+      case 3: return 'חיסור';
+      default: return 'לא דווח';
+    }
   }
 }
 

@@ -136,6 +136,18 @@ class DatabaseService {
     }
   }
 
+  // מחיקת כל התלמידים מכיתה
+  async deleteAllStudentsFromClass(classId) {
+    try {
+      await this.db.collection('classes').doc(classId).delete();
+      console.log(`כל התלמידים נמחקו בהצלחה מכיתה ${classId}`);
+      return true;
+    } catch (error) {
+      console.error('שגיאה במחיקת תלמידים:', error);
+      throw error;
+    }
+  }
+
   // שליפת כל הכיתות
   async getAllClasses() {
     try {
@@ -144,6 +156,45 @@ class DatabaseService {
     } catch (error) {
       console.error('שגיאה בטעינת רשימת כיתות:', error);
       return [];
+    }
+  }
+
+  // שליפת כל הכיתות עם נתוני התלמידים שלהן
+  async getAllClassesWithStudents() {
+    try {
+      const snapshot = await this.db.collection('classes').get();
+      const classesData = {};
+      
+      snapshot.docs.forEach(doc => {
+        const data = doc.data();
+        classesData[doc.id] = {
+          students: data.students || [],
+          lastUpdated: data.lastUpdated,
+          grade: data.grade,
+          parallel: data.parallel
+        };
+      });
+      
+      return classesData;
+    } catch (error) {
+      console.error('שגיאה בטעינת נתוני כל הכיתות:', error);
+      return {};
+    }
+  }
+
+  // שמירת נתוני כיתה חדשה עם תמיכה בשכבה ומקבילה
+  async saveClassDataWithGradeAndParallel(classId, classData, grade, parallel) {
+    try {
+      await this.db.collection('classes').doc(classId).set({
+        ...classData,
+        grade: grade,
+        parallel: parallel,
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      console.log('נתוני כיתה נשמרו בהצלחה עם שכבה ומקבילה');
+    } catch (error) {
+      console.error('שגיאה בשמירת נתוני כיתה:', error);
+      throw error;
     }
   }
 
@@ -261,25 +312,29 @@ class DatabaseService {
     }
   }
 
-  // שמירת ספירה חדשה עם מזהה ייחודי
+  // שמירת ספירה חדשה עם מזהה ייחודי - כל הספירה ב-document אחד
   async saveNewAttendanceCount(classId, date, attendanceData, countName = null) {
     try {
       const now = new Date();
       const countId = `${classId}_${date}_${now.getTime()}`;
       
-      const docRef = await this.db.collection('attendance_counts').add({
+      // יצירת document אחד עם כל נתוני הנוכחות
+      const attendanceDocument = {
         countId: countId,
         classId: classId,
         date: date,
         countName: countName || `ספירה ${now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}`,
-        data: attendanceData,
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         totalStudents: Object.keys(attendanceData).length,
         presentCount: Object.values(attendanceData).filter(a => a.status === 1).length,
         lateCount: Object.values(attendanceData).filter(a => a.status === 2).length,
         absentCount: Object.values(attendanceData).filter(a => a.status === 3).length,
-        createdAt: now.toISOString()
-      });
+        createdAt: now.toISOString(),
+        // שמירת כל נתוני הנוכחות ב-document אחד
+        attendanceData: attendanceData
+      };
+      
+      const docRef = await this.db.collection('attendance_counts').add(attendanceDocument);
       
       console.log('ספירה חדשה נשמרה בהצלחה:', docRef.id);
       return {
@@ -352,6 +407,21 @@ class DatabaseService {
           return [];
         }
       }
+    }
+  }
+
+  // שליפת נתוני נוכחות ספציפיים מתוך ספירה
+  async getAttendanceDataFromCount(countId) {
+    try {
+      const doc = await this.db.collection('attendance_counts').doc(countId).get();
+      if (doc.exists) {
+        const data = doc.data();
+        return data.attendanceData || {};
+      }
+      return {};
+    } catch (error) {
+      console.error('שגיאה בשליפת נתוני נוכחות מהספירה:', error);
+      return {};
     }
   }
 
@@ -520,8 +590,8 @@ class DatabaseService {
   // בדיקת חיבור למסד נתונים
   async testConnection() {
     try {
-      // ניסיון לקרוא מסמך לא קיים כדי לבדוק חיבור
-      await this.db.collection('test').doc('test').get();
+      // ניסיון לקרוא מסמך מהדאטהבייס
+      const testDoc = await this.db.collection('test_connection').doc('test').get();
       return true;
     } catch (error) {
       console.error('שגיאה בבדיקת חיבור למסד נתונים:', error);
